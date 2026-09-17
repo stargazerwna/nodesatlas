@@ -1,6 +1,6 @@
 {
-  "name": "netmonitor",
-  "version": "1.2.0",
+  "name": "nodeatlas",
+  "version": "1.5.0",
   "private": true,
   "type": "module",
   "main": "electron/main.js",
@@ -22,7 +22,8 @@
   },
   "build": {
     "appId": "com.netmonitor.nodeatlas",
-    "productName": "NodeAtlas",
+    "productName": "nodesAtlas",
+    "copyright": "Leonidas Papadopoulos - leonidas@wna.gr",
     "icon": "build/icon.ico",
     "directories": {
       "output": "dist-electron"
@@ -32,10 +33,7 @@
       "build/**/*",
       "server.js",
       "nodes.example.json",
-      "nodes.local.json",
       "links.example.json",
-      "links.local.json",
-      "workspace.local.json",
       "electron/**/*",
       "package.json"
     ],
@@ -46,9 +44,9 @@
       "artifactName": "NodeAtlas-${version}-portable.exe"
     }
   },
-  "description": "NodeAtlas desktop monitoring app",
+  "description": "nodesAtlas desktop monitoring app",
   "author": {
-    "name": "NetMonitor",
+    "name": "nodesAtlas",
     "email": "support@example.com"
   }
 }

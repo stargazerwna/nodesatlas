@@ -4,6 +4,14 @@
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <meta name="theme-color" content="#11161c" />
+    <script>
+      (() => {
+        let theme = 'system';
+        try { theme = localStorage.getItem('nodeatlas-theme') || theme; } catch {}
+        document.documentElement.dataset.theme = theme === 'dark' || (theme !== 'light' && matchMedia('(prefers-color-scheme: dark)').matches) ? 'dark' : 'light';
+        document.documentElement.style.colorScheme = document.documentElement.dataset.theme;
+      })();
+    </script>
     <title>NodesAtlas</title>
     <link rel="preconnect" href="https://fonts.googleapis.com" />
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />

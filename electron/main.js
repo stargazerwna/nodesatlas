@@ -1,4 +1,4 @@
-import { app, BrowserWindow, Menu, dialog, shell } from 'electron';
+import { app, BrowserWindow, Menu, dialog, shell, Notification, ipcMain } from 'electron';
 import path from 'node:path';
 import fs from 'node:fs';
 import { fileURLToPath, pathToFileURL } from 'node:url';
@@ -8,10 +8,15 @@ const __dirname = path.dirname(__filename);
 const rootDir = path.resolve(__dirname, '..');
 const iconPath = path.join(rootDir, 'build', 'icon.png');
 const HOMEPAGE = 'https://wna.gr/nodeatlas';
-const COPYRIGHT = 'Copyright \u00A9 2026 Leonidas Papadopoulos';
+const COPYRIGHT = 'Copyright \u00A9 2026 Leonidas Papadopoulos - leonidas@wna.gr';
+const APP_USER_MODEL_ID = 'com.netmonitor.nodeatlas';
 // The desktop app defaults to its own port so it can run alongside the web app (which stays on 3001).
 const API_PORT = Number(process.env.NODEATLAS_PORT || 3030);
 process.env.PORT = String(API_PORT);
+
+if (process.platform === 'win32') {
+  app.setAppUserModelId(APP_USER_MODEL_ID);
+}
 
 let mainWindow;
 let backendStarted = false;
@@ -34,16 +39,39 @@ process.on('unhandledRejection', (error) => {
 function showAboutDialog() {
   dialog.showMessageBox(mainWindow, {
     type: 'info',
-    title: 'About NodeAtlas',
-    message: 'NodeAtlas',
+    title: 'About nodesAtlas',
+    message: 'nodesAtlas',
     detail: `Version ${app.getVersion()}\n${COPYRIGHT}\n${HOMEPAGE}`,
     buttons: ['OK'],
   });
 }
 
+function showDeviceDownNotification(_event, device = {}) {
+  if (!Notification.isSupported()) return false;
+
+  const name = typeof device.name === 'string' && device.name.trim() ? device.name.trim() : 'Device';
+  const ip = typeof device.ip === 'string' && device.ip.trim() ? device.ip.trim() : '';
+  const notification = new Notification({
+    title: `${name} is offline`,
+    body: ip ? `${ip} stopped responding to SNMP.` : 'The device stopped responding to SNMP.',
+    icon: fs.existsSync(iconPath) ? iconPath : undefined,
+  });
+
+  notification.on('click', () => {
+    if (!mainWindow) return;
+    if (mainWindow.isMinimized()) mainWindow.restore();
+    mainWindow.show();
+    mainWindow.focus();
+  });
+  notification.show();
+  return true;
+}
+
+ipcMain.handle('nodeatlas:device-down-notification', showDeviceDownNotification);
+
 function buildMenu() {
   app.setAboutPanelOptions({
-    applicationName: 'NodeAtlas',
+    applicationName: 'nodesAtlas',
     applicationVersion: app.getVersion(),
     copyright: COPYRIGHT,
     website: HOMEPAGE,
@@ -52,7 +80,7 @@ function buildMenu() {
   const template = [
     ...(process.platform === 'darwin' ? [{
       label: app.name,
-      submenu: [{ label: 'About NodeAtlas', click: showAboutDialog }, { type: 'separator' }, { role: 'quit' }],
+      submenu: [{ label: 'About nodesAtlas', click: showAboutDialog }, { type: 'separator' }, { role: 'quit' }],
     }] : []),
     { role: 'fileMenu' },
     { role: 'editMenu' },
@@ -63,7 +91,7 @@ function buildMenu() {
       submenu: [
         { label: 'Visit nodeatlas.wna.gr', click: () => shell.openExternal(HOMEPAGE) },
         { type: 'separator' },
-        { label: 'About NodeAtlas', click: showAboutDialog },
+        { label: 'About nodesAtlas', click: showAboutDialog },
       ],
     },
   ];
@@ -108,7 +136,7 @@ function createWindow() {
     height: 980,
     minWidth: 1200,
     minHeight: 780,
-    title: 'NodeAtlas',
+    title: 'nodesAtlas',
     icon: fs.existsSync(iconPath) ? iconPath : undefined,
     webPreferences: {
       contextIsolation: false,
@@ -119,6 +147,14 @@ function createWindow() {
   mainWindow.webContents.on('did-fail-load', (_event, errorCode, errorDescription) => {
     if (errorCode === -3) return; // Ignore aborted loads caused by normal navigation.
     showFatalError('NodeAtlas failed to load its interface', new Error(`${errorDescription} (${errorCode})`));
+  });
+
+  mainWindow.webContents.setWindowOpenHandler(({ url }) => {
+    if (url.startsWith('https://github.com/stargazerwna/nodesatlas/releases/tag/')) {
+      shell.openExternal(url).catch((error) => console.error('Could not open release page:', error));
+      return { action: 'deny' };
+    }
+    return { action: 'allow' };
   });
 
   mainWindow.on('unresponsive', () => {

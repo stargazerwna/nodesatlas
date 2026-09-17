@@ -3,8 +3,8 @@
 <head>
 <meta charset="UTF-8" />
 <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-<meta name="description" content="NodesAtlas — a lightweight SNMP network topology monitor for MikroTik, OpenWRT, and standard SNMP devices. Desktop app and self-hosted web UI." />
-<title>NodesAtlas — Live network topology monitoring</title>
+<meta name="description" content="nodesAtlas — a lightweight SNMP network topology monitor for MikroTik, OpenWRT, and standard SNMP devices. Desktop app and self-hosted web UI." />
+<title>nodesAtlas — Live network topology monitoring</title>
 <link rel="preconnect" href="https://fonts.googleapis.com" />
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
 <link href="https://fonts.googleapis.com/css2?family=DM+Mono:wght@400;500&family=Space+Grotesk:wght@400;500;600;700&display=swap" rel="stylesheet" />
@@ -34,17 +34,11 @@
   .btn-ghost:hover { border-color:#178b57; color:#178b57; }
   .badges { display:flex; gap:16px; margin-top:26px; color:#8b969c; font:11px 'DM Mono',monospace; letter-spacing:.06em; }
 
-  /* Mock topology canvas, styled like the real app */
-  .mock-canvas { position:relative; height:340px; border:1px solid #e7ecea; border-radius:8px; background:radial-gradient(circle at 50% 40%,#fcfefd 0,#f7faf8 65%,#f3f7f4 100%),linear-gradient(90deg,#e9efec 1px,transparent 1px),linear-gradient(#e9efec 1px,transparent 1px); background-size:auto,26px 26px,26px 26px; box-shadow:0 12px 30px #11182014; overflow:hidden; }
-  .mock-canvas svg { position:absolute; inset:0; width:100%; height:100%; }
-  .mock-canvas svg line { stroke:#8fa49a; stroke-width:1.5; stroke-dasharray:5 4; }
-  .mock-canvas svg text { font:9px 'DM Mono',monospace; fill:#53616b; text-anchor:middle; }
-  .mock-node { position:absolute; transform:translate(-50%,-50%); min-width:150px; padding:8px 9px; display:flex; align-items:center; gap:9px; background:#fff; border:1px solid #dce5e0; border-radius:5px; box-shadow:0 3px 10px #35453b12; }
-  .mock-node strong { display:block; font-size:12px; }
-  .mock-node small { display:block; color:#7e8b96; font:10px 'DM Mono',monospace; }
-  .mock-icon { flex:0 0 28px; height:28px; border-radius:5px; display:grid; place-items:center; color:#fff; font-size:14px; }
-  .mock-icon.router { background:#247f83; } .mock-icon.device { background:#639c71; } .mock-icon.camera { background:#bd7b45; }
-  .status-dot { display:inline-block; width:6px; height:6px; border-radius:50%; background:var(--green); margin-right:5px; }
+  .demo-preview { margin:0; min-width:0; }
+  .demo-preview a { display:block; border:1px solid #34453f; border-radius:8px; overflow:hidden; box-shadow:0 12px 30px #11182024; }
+  .demo-preview a:focus-visible { outline:3px solid var(--green); outline-offset:4px; }
+  .demo-preview img { display:block; width:100%; height:auto; }
+  .demo-preview figcaption { margin-top:12px; color:#68757c; font:11px/1.5 'DM Mono',monospace; }
 
   section.strip { max-width:1100px; margin:0 auto; padding:10px 24px 60px; }
   .section-label { font:10px 'DM Mono',monospace; letter-spacing:.14em; color:#8b969c; margin:0 0 10px; }
@@ -86,33 +80,28 @@
     <nav class="nav-links">
       <a href="#features">Features</a>
       <a href="#roadmap">Roadmap</a>
-      <a href="https://github.com/stargazerwna/netmonitor">GitHub</a>
+      <a href="https://github.com/stargazerwna/nodeatlas">GitHub</a>
     </nav>
-    <a class="cta" href="https://github.com/stargazerwna/netmonitor/releases/latest">Download</a>
+    <a class="cta" href="https://github.com/stargazerwna/nodeatlas/releases/latest">Download</a>
   </header>
 
   <section class="hero">
     <div>
       <p class="section-label">SNMP TOPOLOGY MONITOR</p>
       <h1>See your whole network as <span>one living map</span></h1>
-      <p>NodesAtlas polls MikroTik, OpenWRT, and standard SNMP devices in real time and draws the results as a live, drag-and-drop topology — uptime, traffic, CPU, and memory at a glance, with no database or cloud account required.</p>
+      <p>nodesAtlas polls MikroTik, OpenWRT, and standard SNMP devices in real time and draws the results as a live, drag-and-drop topology — uptime, traffic, CPU, and memory at a glance. It also accepts imports from WiND and The Dude so you can bring an existing network map into the app in minutes, with no database or cloud account required.</p>
       <div class="hero-actions">
-        <a class="btn btn-primary" href="https://github.com/stargazerwna/netmonitor/releases/latest">⬇ Download for Windows</a>
-        <a class="btn btn-ghost" href="https://github.com/stargazerwna/netmonitor">View source on GitHub</a>
+        <a class="btn btn-primary" href="https://github.com/stargazerwna/nodeatlas/releases/latest">⬇ Download for Windows</a>
+        <a class="btn btn-ghost" href="https://github.com/stargazerwna/nodeatlas">View source on GitHub</a>
       </div>
       <div class="badges"><span>◆ FREE &amp; OPEN SOURCE</span><span>◇ NO CLOUD REQUIRED</span><span>▣ RUNS LOCALLY</span></div>
     </div>
-    <div class="mock-canvas">
-      <svg aria-hidden="true">
-        <line x1="50%" y1="20%" x2="28%" y2="68%" />
-        <line x1="50%" y1="20%" x2="72%" y2="68%" />
-        <text x="39%" y="46%">RX 12.4 Mbps</text>
-        <text x="61%" y="46%">RX 6.2 Mbps</text>
-      </svg>
-      <div class="mock-node" style="left:50%;top:20%"><span class="mock-icon router">◆</span><span><strong>MikroTik Router</strong><small><span class="status-dot"></span>192.168.88.1</small></span></div>
-      <div class="mock-node" style="left:28%;top:68%"><span class="mock-icon router">◆</span><span><strong>OpenWRT Access Point</strong><small><span class="status-dot"></span>192.168.1.1</small></span></div>
-      <div class="mock-node" style="left:72%;top:68%"><span class="mock-icon camera">◉</span><span><strong>DVR</strong><small><span class="status-dot"></span>192.168.1.10</small></span></div>
-    </div>
+    <figure class="demo-preview">
+      <a href="assets/nodeatlas-demo.png" target="_blank" rel="noopener" aria-label="View full-size nodesAtlas screenshot (opens in a new tab)">
+        <img src="assets/nodeatlas-demo.png" width="1459" height="898" alt="nodesAtlas in dark mode showing a linked MikroTik router, OpenWRT access point, and DVR, with SNMP device settings in the right sidebar." />
+      </a>
+      <figcaption>The nodesAtlas desktop app in dark mode. Click to view full size.</figcaption>
+    </figure>
   </section>
 
   <section class="strip" id="features">
@@ -123,6 +112,7 @@
       <div class="card"><div class="icon" style="background:#4f8dca">↗</div><h3>MikroTik &amp; OpenWRT aware</h3><p>Recognizes RouterOS and OpenWrt sysDescr strings automatically and surfaces platform version, CPU, and memory.</p></div>
       <div class="card"><div class="icon" style="background:#bd7b45">◉</div><h3>Ping fallback</h3><p>When SNMP is unreachable, a right-click ping tells you instantly whether a device is merely quiet or actually down.</p></div>
       <div class="card"><div class="icon" style="background:#639c71">⧉</div><h3>Workspace export/import</h3><p>Rename, export, and import your whole topology as a single JSON file — easy to back up or hand to a teammate.</p></div>
+      <div class="card"><div class="icon" style="background:#c44d5f">◎</div><h3>WiND + The Dude imports</h3><p>Bring in public WiND maps or The Dude device/link CSV exports, then tidy up SNMP credentials and let the topology come alive.</p></div>
       <div class="card"><div class="icon" style="background:#6d669d">▣</div><h3>Zero dependencies to run</h3><p>A single local JSON file stores your topology — no database, no account, no cloud service required.</p></div>
       <div class="card"><div class="icon" style="background:#1d8d91">⬇</div><h3>Desktop or self-hosted</h3><p>Ship it as a portable Windows app for a technician's laptop, or run the same code as a small self-hosted web service.</p></div>
     </div>
@@ -133,10 +123,12 @@
       <p class="section-label">WHAT'S NEXT</p>
       <h2 class="section-title">Roadmap</h2>
       <div class="timeline">
-        <div class="stop now"><span class="ver">v1.1 — current</span><h4>Solid foundation</h4><ul><li>Live topology canvas &amp; link traffic</li><li>Workspace rename / export / import</li><li>Portable desktop app (isolated per copy)</li><li>Sample topology for new users</li></ul></div>
+        <div class="stop"><span class="ver">v1.15</span><h4>Solid foundation</h4><ul><li>Live topology canvas &amp; link traffic</li><li>Workspace rename / export / import</li><li>Portable desktop app (isolated per copy)</li></ul></div>
         <div class="stop"><span class="ver">v1.2</span><h4>Visibility &amp; alerts</h4><ul><li>Desktop notifications when a device goes down</li><li>SNMPv3 authentication &amp; encryption</li><li>Light/dark theme toggle</li></ul></div>
-        <div class="stop"><span class="ver">v1.3</span><h4>History &amp; reporting</h4><ul><li>Historical uptime/traffic charts</li><li>Multiple sites in one workspace switcher</li><li>Exportable PDF/CSV reports</li></ul></div>
-        <div class="stop"><span class="ver">v2.0</span><h4>Team &amp; scale</h4><ul><li>macOS &amp; Linux builds with auto-update</li><li>Multi-user accounts &amp; permissions</li><li>Optional cloud sync of workspaces</li></ul></div>
+        <div class="stop"><span class="ver">v1.3</span><h4>MikroTik wireless visibility</h4><ul><li>Right-click "Wireless clients" view for MikroTik devices</li><li>DHCP-lease hostnames via RouterOS API</li><li>One-click add-to-monitoring from the client list</li></ul></div>
+        <div class="stop"><span class="ver">v1.4</span><h4>The Dude workspace import</h4><ul><li>Import devices and links from MikroTik The Dude CSV exports</li><li>Deduplicate devices by IP across maps</li><li>Pair imported links per map and prevent duplicate re-imports</li></ul></div>
+        <div class="stop now"><span class="ver">v1.5 — current</span><h4>Diagnostics &amp; usability</h4><ul><li>MikroTik Torch live traffic inspection</li><li>Live hop-by-hop traceroute and continuous ping tools</li><li>Movable, resizable diagnostic dialogs</li></ul></div>
+        <div class="stop"><span class="ver">v2.x</span><h4>History, team &amp; scale</h4><ul><li>Historical uptime/traffic charts</li><li>Multiple sites in one workspace switcher</li><li>Exportable PDF/CSV reports</li><li>macOS &amp; Linux builds with auto-update</li><li>Multi-user accounts &amp; permissions</li><li>Cloud version available, with optional cloud sync of workspaces</li></ul></div>
       </div>
     </div>
   </section>
@@ -144,11 +136,11 @@
   <section class="cta-band">
     <h2>Map your network in minutes</h2>
     <p>No signup, no cloud, no lock-in — just point it at your devices.</p>
-    <a class="btn btn-primary" href="https://github.com/stargazerwna/netmonitor/releases/latest">⬇ Download NodesAtlas</a>
+    <a class="btn btn-primary" href="https://github.com/stargazerwna/nodeatlas/releases/latest">⬇ Download NodeAtlas</a>
   </section>
 
   <footer>
-    Copyright © 2026 Leonidas Papadopoulos · <a href="https://github.com/stargazerwna/netmonitor">GitHub</a> · <a href="https://wna.gr/nodeatlas">wna.gr/nodeatlas</a>
+    Copyright © 2026 Leonidas Papadopoulos · <a href="https://github.com/stargazerwna/nodeatlas">GitHub</a> · <a href="https://wna.gr/nodeatlas">wna.gr/nodeatlas</a>
   </footer>
 </body>
 </html>
