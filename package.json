@@ -4,13 +4,15 @@
   "private": true,
   "type": "module",
   "main": "electron/main.js",
+  "desktopName": "nodesAtlas",
   "scripts": {
     "dev": "vite",
     "server": "node server.js",
     "build": "vite build",
     "preview": "vite preview",
     "electron": "npm run build && electron .",
-    "package:win": "npm run build && electron-builder --win portable"
+    "package:win": "npm run build && electron-builder --win portable",
+    "package:linux": "npm run build && electron-builder --linux flatpak"
   },
   "dependencies": {
     "net-snmp": "^3.26.0"
@@ -42,6 +44,18 @@
         "portable"
       ],
       "artifactName": "NodeAtlas-${version}-portable.exe"
+    },
+    "linux": {
+      "target": [
+        "flatpak"
+      ],
+      "category": "Network",
+      "syncDesktopName": true
+    },
+    "flatpak": {
+      "finishArgs": [
+        "--share=network"
+      ]
     }
   },
   "description": "nodesAtlas desktop monitoring app",
