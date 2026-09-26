@@ -1,5 +1,6 @@
 # nodesAtlas
 ( https://wna.gr/nodeatlas )
+Stand-alone SNMP based network monitor/topology with extra features for Mikrotik RouterOS and OpenWRT routers. 
 ![preview](./site/assets/nodeatlas-demo.png)
 ## Run
 
