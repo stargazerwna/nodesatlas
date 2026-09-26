@@ -1,5 +1,6 @@
 # nodesAtlas
 ( https://wna.gr/nodeatlas )
+![preview](./site/assets/nodeatlas-demo.png)
 ## Run
 
 Install dependencies, then start the API and UI in separate terminals:
