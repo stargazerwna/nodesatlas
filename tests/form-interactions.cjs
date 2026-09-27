@@ -25,6 +25,9 @@ app.whenReady().then(async () => {
    console.log('PASS',label);
   }
   await run(`window.fetch=async(url,init)=>({ok:true,json:async()=>url==='/api/nodes'?nodes.map(n=>({...n})):url==='/api/links'?[]:{...nodes[0],...JSON.parse(init?.body||'{}')}}); void 0`);
+    await run(`window.droppedDeviceRequest=null; window.fetch=async(url,init)=>{if(url==='/api/nodes'&&init?.method==='POST'){droppedDeviceRequest=JSON.parse(init.body);return {ok:true,json:async()=>({...droppedDeviceRequest,serverSaved:true})}}return {ok:true,json:async()=>url==='/api/nodes'?nodes.map(n=>({...n})):url==='/api/links'?[]:{...nodes[0],...JSON.parse(init?.body||'{}')}}}; const canvas=document.querySelector('#canvas'); const bounds=canvas.getBoundingClientRect(); const event=new MouseEvent('drop',{bubbles:true,cancelable:true,clientX:bounds.left+bounds.width/2,clientY:bounds.top+bounds.height/2}); Object.defineProperty(event,'dataTransfer',{value:{getData:()=> 'device'}}); canvas.dispatchEvent(event); void 0`);
+    await new Promise(r=>setTimeout(r,25));
+    await check('Palette drop saves device immediately', `droppedDeviceRequest?.type==='device' && nodes.some(node=>node.id===droppedDeviceRequest.id && node.serverSaved)`);
   await click('.map-node');
   await click('#device-form input[name="name"]');
   await win.webContents.insertText('Edited');

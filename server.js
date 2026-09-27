@@ -207,9 +207,7 @@ function createSnmpSession(node, options = {}) {
   };
 
   if (getSnmpVersion(node) !== '3') {
-    const session = snmp.createSession(node.ip, getEffectiveCommunity(node), { ...sessionOptions, version: snmp.Version2c });
-    session.on('error', () => {});
-    return session;
+    return snmp.createSession(node.ip, getEffectiveCommunity(node), { ...sessionOptions, version: snmp.Version2c });
   }
 
   const securityLevel = getSnmpSecurityLevel(node);
@@ -228,9 +226,7 @@ function createSnmpSession(node, options = {}) {
   }
 
   const context = node.context || process.env.SNMPV3_CONTEXT || '';
-  const session = snmp.createV3Session(node.ip, user, { ...sessionOptions, version: snmp.Version3, context });
-  session.on('error', () => {});
-  return session;
+  return snmp.createV3Session(node.ip, user, { ...sessionOptions, version: snmp.Version3, context });
 }
 
 async function checkPing(target) {
@@ -682,7 +678,7 @@ function discoverWsDiscoveryNeighbors() {
     const timer = setTimeout(finish, 2200);
     socket.on('message', (response, remote) => {
       const text = response.toString('utf8');
-      const xaddrs = [...text.matchAll(/<(?:[^:>]+:)?XAddrs[^>]*>([^<]+)</gi)].flatMap((match) => match[1].trim().split(/\s+/));
+      const xaddrs = [...text.matchAll(/<(?:[^:>]+:)?XAddrs[^>]*>([^<]+)</i)].flatMap((match) => match[1].trim().split(/\s+/));
       const remoteIp = xaddrs.map((address) => address.match(/https?:\/\/\[?([^\]/:]+)|https?:\/\/([^/:\s]+)/i)).find(Boolean)?.slice(1).find(Boolean) || remote.address;
       const scopes = text.match(/<(?:[^:>]+:)?Scopes[^>]*>([^<]+)</i)?.[1] || '';
       const name = scopes.match(/(?:^|\s)(?:d:)?name=([^\s]+)/i)?.[1] || scopes.match(/(?:^|\s)(?:d:)?computer=([^\s]+)/i)?.[1] || remoteIp;
@@ -1435,6 +1431,15 @@ const server = http.createServer(async (request, response) => {
     await saveLinks();
     return send(response, 200, link);
   }
+  if (request.method === 'DELETE' && request.url?.startsWith('/api/links/')) {
+    const id = request.url.split('/').pop();
+    const existed = links.some((item) => item.id === id);
+    links = links.filter((item) => item.id !== id);
+    if (!existed) return send(response, 404, { error: 'Link not found.' });
+    snapshots.delete(`link:${id}`);
+    await saveLinks();
+    return send(response, 200, { ok: true });
+  }
   if (request.method === 'POST' && request.url === '/api/nodes') {
     let body = '';
     for await (const chunk of request) body += chunk;
@@ -1468,7 +1473,7 @@ const server = http.createServer(async (request, response) => {
     if (guiPort !== undefined) nextNode.guiPort = String(guiPort).trim() === '' ? undefined : Number(guiPort);
     if (hasOwn(payload, 'guiSsl')) nextNode.guiSsl = Boolean(payload.guiSsl);
     if (payload.apiPort !== undefined) nextNode.apiPort = String(payload.apiPort).trim() === '' ? undefined : Number(payload.apiPort);
-    ['snmpVersion', 'community', 'snmpUser', 'securityLevel', 'authProtocol', 'authKey', 'privProtocol', 'privKey', 'context', 'apiUsername', 'apiPassword'].forEach((key) => {
+    ['comment', 'snmpVersion', 'community', 'snmpUser', 'securityLevel', 'authProtocol', 'authKey', 'privProtocol', 'privKey', 'context', 'apiUsername', 'apiPassword'].forEach((key) => {
       if (hasOwn(payload, key)) nextNode[key] = payload[key];
     });
     if (hasPosition) {

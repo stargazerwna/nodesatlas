@@ -120,6 +120,13 @@ function statusLabel(status, pingReachable = false) {
   return status === 'healthy' ? 'Online' : status === 'warning' ? 'Degraded' : 'Offline';
 }
 
+function getHostHealthSummary() {
+  const online = nodes.filter((node) => node.status === 'healthy' || (node.status === 'offline' && node.pingReachable)).length;
+  const degraded = nodes.filter((node) => node.status === 'warning').length;
+  const offline = nodes.filter((node) => node.status === 'offline' && !node.pingReachable).length;
+  return { online, degraded, offline };
+}
+
 function escapeHtml(value) {
   return String(value ?? '').replace(/[&<>"']/g, (char) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[char]));
 }
@@ -138,7 +145,7 @@ function renderPasswordField(name, label, value, ariaLabel) {
 }
 
 function getNodeSavePayload(node) {
-  const keys = ['id', 'name', 'type', 'platform', 'ip', 'port', 'guiPort', 'guiSsl', 'x', 'y', 'snmpVersion', 'community', 'snmpUser', 'securityLevel', 'authProtocol', 'authKey', 'privProtocol', 'privKey', 'context', 'apiUsername', 'apiPassword', 'apiPort'];
+  const keys = ['id', 'name', 'type', 'platform', 'ip', 'port', 'guiPort', 'guiSsl', 'x', 'y', 'comment', 'snmpVersion', 'community', 'snmpUser', 'securityLevel', 'authProtocol', 'authKey', 'privProtocol', 'privKey', 'context', 'apiUsername', 'apiPassword', 'apiPort'];
   return Object.fromEntries(keys.filter((key) => node[key] !== undefined).map((key) => [key, node[key]]));
 }
 
@@ -214,6 +221,29 @@ function renderNotReadyView(view) {
   return `<div class="feature-landing"><div class="feature-landing-mark">${view === 'events' ? '◴' : '▥'}</div><p class="section-label">WORKSPACE / ${title.toUpperCase()}</p><h1>${title} are on the way</h1><p>${description}</p><span class="feature-landing-status">NOT READY YET</span><button class="primary-btn" id="return-to-topology">← <span>Back to topology</span></button></div>`;
 }
 
+function renderStatusBar() {
+  const selected = nodes.find((node) => node.id === selectedId);
+  const showNodeInfo = activeView === 'topology' && selected;
+  const offline = showNodeInfo && selected.status === 'offline' && !selected.pingReachable;
+  const platform = showNodeInfo ? (selected.platformVersion || selected.description || '--') : '';
+  const clock = new Date().toLocaleString('en-GB', {
+    day: '2-digit', month: '2-digit', year: 'numeric',
+    hour: '2-digit', minute: '2-digit', second: '2-digit', hour12: false,
+  });
+  return `<footer class="status-bar">
+    <button class="copyright-link" id="open-license" title="View license">© 2026, nodesatlas.wna.gr</button>
+    ${showNodeInfo ? `<span class="status-bar-item identity"><span class="status-dot ${selected.pingReachable ? 'healthy' : selected.status}"></span>${escapeHtml(selected.systemName || selected.name)}</span>
+    <span class="status-bar-item">${escapeHtml(selected.ip || '--')}</span>
+    <span class="status-bar-item">${escapeHtml(platform)}</span>
+    ${selected.comment ? `<span class="status-bar-item comment">${escapeHtml(selected.comment)}</span>` : ''}
+    <span class="status-bar-item">CPU <b>${offline ? '--' : `${selected.cpu ?? '--'}%`}</b></span>
+    <span class="status-bar-item">MEM <b>${offline ? '--' : `${selected.memory ?? '--'}%`}</b></span>
+    <span class="status-bar-item">UPTIME <b>${selected.uptime || '--'}</b></span>
+    <span class="status-bar-item">${offline ? '--' : `${selected.latency ?? '--'} ms`}</span>` : ''}
+    <span class="status-bar-clock">${clock}</span>
+  </footer>`;
+}
+
 function render() {
   const previousWrap = document.querySelector('#canvas-wrap');
   const scrollLeft = previousWrap?.scrollLeft || 0;
@@ -228,6 +258,7 @@ function render() {
   if (selected && !nodeTypes[selected.type]) selected.type = 'device';
   const formValues = selected && settingsDraft?.id === selected.id ? settingsDraft : selected;
   const inspectorOpen = selected && !inspectorCollapsed;
+  const hostHealth = getHostHealthSummary();
   app.innerHTML = `
     <header class="topbar">
       <a class="brand" href="https://wna.gr/nodesatlas" target="_blank" rel="noreferrer"><span class="brand-mark">N</span><span>Nodes<span>Atlas</span></span></a>
@@ -239,7 +270,7 @@ function render() {
       <aside class="sidebar">
         <div class="nav-section"><span class="section-label">WORKSPACE</span><button class="nav-item ${activeView === 'topology' ? 'active' : ''}" data-view="topology">⌘ <span>Topology</span></button><button class="nav-item ${activeView === 'events' ? 'active' : ''}" data-view="events">◴ <span>Events</span><em>12</em></button><button class="nav-item ${activeView === 'reports' ? 'active' : ''}" data-view="reports">▥ <span>Reports</span></button></div>
         <div class="nav-section palette"><span class="section-label">ADD TO MAP</span>${Object.entries(nodeTypes).map(([key, item]) => `<button class="tool" draggable="true" data-type="${key}"><span class="tool-icon ${item.className}">${item.icon}</span>${item.label}<small>Drag</small></button>`).join('')}</div>
-        <div class="sidebar-footer"><span>MONITORED HOSTS</span><strong>${nodes.length}</strong><div class="health-bar"><i></i><i></i><i></i><i class="down"></i></div><small>5 online · 1 degraded · 2 offline</small></div>
+        <div class="sidebar-footer"><span>MONITORED HOSTS</span><strong>${nodes.length}</strong><div class="health-bar">${[['healthy', hostHealth.online], ['warn', hostHealth.degraded], ['down', hostHealth.offline]].filter(([, count]) => count > 0).map(([className, count]) => `<i class="${className}" style="flex:${count}"></i>`).join('') || '<i></i>'}</div><small>${hostHealth.online} online · ${hostHealth.degraded} degraded · ${hostHealth.offline} offline</small></div>
       </aside>
       <div class="resize-handle" id="sidebar-handle"></div>
       <section class="content">
@@ -260,8 +291,8 @@ function render() {
         <button class="event-button">View device events <span>→</span></button>
       </aside>` : ''}
       ${linking?.step === 'source' ? renderLinkDialog() : ''}${renderLinkEditor()}${renderContextMenu()}${renderDiscoveryDialog()}${renderWirelessClientsDialog()}${renderTracerouteDialog()}${renderTorchDialog()}${renderQuickPingDialog()}${pingFeedback ? `<div class="ping-feedback">${pingFeedback}</div>` : ''}
+      ${renderStatusBar()}
     </main>
-    <button class="copyright-link" id="open-license" title="View license">© 2026, nodesatlas.wna.gr</button>
     ${licenseOpen ? renderLicenseDialog() : ''}${windImportOpen ? renderWindImportDialog() : ''}${dudeImportOpen ? renderDudeImportDialog() : ''}${renderTaskProgress()}`;
   bindEvents();
   if (activeView === 'topology') drawLinks();
@@ -314,6 +345,7 @@ function renderDeviceForm(formValues) {
   return `<form class="device-settings" id="device-form">
     <label><span>DEVICE NAME</span><input name="name" value="${escapeHtml(values.name)}" aria-label="Device name" /></label>
     <label><span>DEVICE TYPE</span><select name="type" aria-label="Device type">${Object.entries(nodeTypes).map(([key, item]) => `<option value="${key}" ${deviceType === key ? 'selected' : ''}>${escapeHtml(item.label)}</option>`).join('')}</select></label>
+    <label class="device-comment"><span>COMMENT</span><input name="comment" value="${escapeHtml(values.comment || '')}" aria-label="Comment" placeholder="Optional note" /></label>
     <label><span>ROUTER PLATFORM</span><select name="platform" aria-label="Router platform"><option value="other" ${platform === 'other' ? 'selected' : ''}>Other / standard SNMP</option><option value="mikrotik" ${platform === 'mikrotik' ? 'selected' : ''}>MikroTik RouterOS</option><option value="openwrt" ${platform === 'openwrt' ? 'selected' : ''}>OpenWRT</option></select></label>
     <label><span>IP ADDRESS</span><input name="ip" value="${escapeHtml(values.ip)}" aria-label="IP address" spellcheck="false" /></label>
     <label><span>GUI PORT (optional)</span><input name="guiPort" type="number" min="1" max="65535" placeholder="e.g. 8080" value="${escapeHtml(values.guiPort || '')}" aria-label="GUI port" /></label>
@@ -351,7 +383,7 @@ function renderInterfaceSelect(selectedIndex) {
 function renderLinkEditor() {
   const link = links.find((item) => item.id === selectedLinkId);
   if (!link) return '';
-  return `<div class="link-dialog"><form id="edit-link-form" data-dialog-key="link-edit">${renderDialogHeader('Edit link source', 'cancel-link')}<label>Source node<select name="sourceId" id="link-source">${nodes.map((node) => `<option value="${node.id}" ${node.id === link.sourceId ? 'selected' : ''}>${node.name}</option>`).join('')}</select></label><label>Target node<select name="targetId">${nodes.map((node) => `<option value="${node.id}" ${node.id === link.targetId ? 'selected' : ''}>${node.name}</option>`).join('')}</select></label>${renderInterfaceSelect(link.interfaceIndex)}<label>Interface IP address<input name="interfaceIp" value="${link.interfaceIp || ''}" /></label><button class="primary-btn" type="submit">Save link</button><button class="cancel-link" type="button" id="cancel-link">Cancel</button></form></div>`;
+  return `<div class="link-dialog"><form id="edit-link-form" data-dialog-key="link-edit">${renderDialogHeader('Edit link source', 'cancel-link')}<label>Source node<select name="sourceId" id="link-source">${nodes.map((node) => `<option value="${node.id}" ${node.id === link.sourceId ? 'selected' : ''}>${node.name}</option>`).join('')}</select></label><label>Target node<select name="targetId">${nodes.map((node) => `<option value="${node.id}" ${node.id === link.targetId ? 'selected' : ''}>${node.name}</option>`).join('')}</select></label>${renderInterfaceSelect(link.interfaceIndex)}<label>Interface IP address<input name="interfaceIp" value="${link.interfaceIp || ''}" /></label><button class="primary-btn" type="submit">Save link</button><button class="delete-link-btn" type="button" id="delete-link">Delete link</button><button class="cancel-link" type="button" id="cancel-link">Cancel</button></form></div>`;
 }
 
 async function loadInterfaces(sourceId) {
@@ -1108,13 +1140,23 @@ function bindEvents() {
   });
   document.querySelectorAll('.tool').forEach((tool) => tool.addEventListener('dragstart', (event) => event.dataTransfer.setData('node-type', tool.dataset.type)));
   canvas.addEventListener('dragover', (event) => event.preventDefault());
-  canvas.addEventListener('drop', (event) => {
+  canvas.addEventListener('drop', async (event) => {
     event.preventDefault();
     const type = event.dataTransfer.getData('node-type');
     if (!type) return;
     const bounds = canvas.getBoundingClientRect();
     const device = { ...defaultSnmpSettings, id: `device-${Date.now()}`, name: `New ${nodeTypes[type].label}`, type, x: ((event.clientX - bounds.left) / bounds.width) * 100, y: ((event.clientY - bounds.top) / bounds.height) * 100, status: 'healthy', ip: '192.168.88.200', uptime: '100%', rx: 0, tx: 0 };
-    nodes.push(device); selectedId = device.id; startupState = 'ready'; fetch(API_URL, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(device) }).catch(() => {}); render();
+    try {
+      const response = await fetch(API_URL, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(device) });
+      if (!response.ok) throw new Error('Could not save device. Check the monitoring service.');
+      const saved = await response.json();
+      nodes.push({ ...device, ...saved });
+      selectedId = saved.id;
+      startupState = 'ready';
+    } catch (error) {
+      pingFeedback = error.message || 'Could not save device. Check the monitoring service.';
+    }
+    render();
   });
   document.querySelector('#add-device').addEventListener('click', () => {
     const device = { ...defaultSnmpSettings, id: `device-${Date.now()}`, name: 'New Device', type: 'device', x: 50, y: 55, status: 'healthy', ip: '192.168.88.200', uptime: '100%', rx: 0, tx: 0 };
@@ -1173,6 +1215,15 @@ function bindEvents() {
       render();
     });
   }
+  const deleteLinkButton = document.querySelector('#delete-link');
+  if (deleteLinkButton) deleteLinkButton.addEventListener('click', async () => {
+    const linkId = selectedLinkId;
+    const response = await fetch(`/api/links/${linkId}`, { method: 'DELETE' });
+    if (response.ok || response.status === 404) links = links.filter((item) => item.id !== linkId);
+    editingLink = false;
+    selectedLinkId = '';
+    render();
+  });
   const deviceActions = document.querySelector('#device-actions');
   if (deviceActions) deviceActions.addEventListener('click', () => {
     actionsMenuOpen = !actionsMenuOpen;
@@ -1217,7 +1268,14 @@ function bindEvents() {
         throw new Error(body.error || 'Could not save settings. Check the monitoring service.');
       }
       const savedNode = await response.json();
-      nodes = nodes.map((node) => node.id === selectedId ? { ...node, ...savedNode, type: settings.type } : node);
+      // JSON.stringify drops keys the server cleared to undefined (e.g. an emptied GUI port),
+      // so a plain spread over the old node would silently resurrect the stale value.
+      nodes = nodes.map((node) => {
+        if (node.id !== selectedId) return node;
+        const merged = { ...node, ...savedNode, type: settings.type };
+        Object.keys(settings).forEach((key) => { if (!Object.prototype.hasOwnProperty.call(savedNode, key)) delete merged[key]; });
+        return merged;
+      });
       settingsFeedback = 'Settings saved.';
     } catch (error) {
       settingsFeedback = error.message || 'Could not save settings. Check the monitoring service.';
@@ -1668,9 +1726,13 @@ async function refreshMetrics(options = {}) {
     if (replaceNodes) {
       nodes = metrics.map(withPingState);
     } else {
-      nodes = nodes.flatMap((node) => {
+      // Position is owned by local drag-and-drop; never let a metrics poll snap it back
+      // to the last saved server value while a drag's PUT request is still in flight.
+      // A node missing from this snapshot (e.g. just added/duplicated while this GET was
+      // already in flight) is kept as-is rather than dropped — deletions clear it directly.
+      nodes = nodes.map((node) => {
         const metric = metricsById.get(node.id);
-        return metric ? [{ ...node, ...withPingState(metric) }] : [];
+        return metric ? { ...node, ...withPingState(metric), x: node.x, y: node.y } : node;
       });
     }
     if (!selectedId || !nodes.some((node) => node.id === selectedId)) selectedId = nodes[0]?.id || '';

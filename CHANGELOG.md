@@ -1,6 +1,18 @@
 # Changelog
 
 All notable changes to nodesAtlas are documented in this file.
+## [1.5.1] - 2026-09-27
+
+### Added
+
+- Add a status bar with selected-device details and a live clock, plus live online, degraded, and offline host totals.
+- Add optional comments to monitored devices and a delete action to the link editor.
+
+### Fixed
+
+- Display the status-bar date in `dd/mm/yyyy` format.
+- Save newly dropped devices before showing them as added, and preserve new devices and their positions across concurrent metric refreshes.
+
 ## [1.5.0] - 2026-09-17
 
 ### Added
