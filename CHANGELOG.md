@@ -12,6 +12,7 @@ All notable changes to nodesAtlas are documented in this file.
 
 - Display the status-bar date in `dd/mm/yyyy` format.
 - Save newly dropped devices before showing them as added, and preserve new devices and their positions across concurrent metric refreshes.
+- Stop draggable/resizable popup dialogs from collapsing to a near-invisible size, by enforcing a 100x200px minimum.
 
 ## [1.5.0] - 2026-09-17
 

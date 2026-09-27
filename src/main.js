@@ -30,18 +30,6 @@ function applyTheme() {
 applyTheme();
 systemTheme.addEventListener('change', applyTheme);
 
-const pollIntervalOptions = [1, 2, 5, 10, 30, 60];
-let pollIntervalSeconds = 1;
-try {
-  const savedInterval = Number(localStorage.getItem('nodeatlas-poll-interval'));
-  if (pollIntervalOptions.includes(savedInterval)) pollIntervalSeconds = savedInterval;
-} catch { /* Keep the default poll interval when storage is unavailable. */ }
-let metricsPollTimer = null;
-function startMetricsPolling() {
-  if (metricsPollTimer) clearInterval(metricsPollTimer);
-  metricsPollTimer = setInterval(refreshMetrics, pollIntervalSeconds * 1000);
-}
-
 // In the packaged desktop app the backend runs on its own port (see electron/main.js);
 // the web app keeps hitting same-origin/proxied "/api" paths as before.
 const apiPort = new URLSearchParams(window.location.search).get('apiPort');
@@ -81,7 +69,6 @@ let panning = null;
 let selecting = null;
 let settingsFeedback = '';
 let actionsMenuOpen = false;
-let avatarMenuOpen = false;
 let editingSettings = false;
 let settingsDraft = null;
 let visiblePasswordFields = new Set();
@@ -234,19 +221,12 @@ function renderNotReadyView(view) {
   return `<div class="feature-landing"><div class="feature-landing-mark">${view === 'events' ? '◴' : '▥'}</div><p class="section-label">WORKSPACE / ${title.toUpperCase()}</p><h1>${title} are on the way</h1><p>${description}</p><span class="feature-landing-status">NOT READY YET</span><button class="primary-btn" id="return-to-topology">← <span>Back to topology</span></button></div>`;
 }
 
-function formatClock() {
-  return new Date().toLocaleString('en-GB', {
-    day: '2-digit', month: '2-digit', year: 'numeric',
-    hour: '2-digit', minute: '2-digit', second: '2-digit', hour12: false,
-  });
-}
-
 function renderStatusBar() {
   const selected = nodes.find((node) => node.id === selectedId);
   const showNodeInfo = activeView === 'topology' && selected;
   const offline = showNodeInfo && selected.status === 'offline' && !selected.pingReachable;
   const platform = showNodeInfo ? (selected.platformVersion || selected.description || '--') : '';
-  const clock = formatClock();
+  const clock = new Date().toLocaleString(undefined, { hour12: false });
   return `<footer class="status-bar">
     <button class="copyright-link" id="open-license" title="View license">© 2026, nodesatlas.wna.gr</button>
     ${showNodeInfo ? `<span class="status-bar-item identity"><span class="status-dot ${selected.pingReachable ? 'healthy' : selected.status}"></span>${escapeHtml(selected.systemName || selected.name)}</span>
@@ -281,7 +261,7 @@ function render() {
       <a class="brand" href="https://wna.gr/nodesatlas" target="_blank" rel="noreferrer"><span class="brand-mark">N</span><span>Nodes<span>Atlas</span></span></a>
       ${renderSiteSwitcher()}
       <span id="release-indicator-slot" role="status">${renderReleaseIndicator()}</span>
-      <div class="top-actions"><label class="theme-control">Theme <select id="theme-select" aria-label="Color theme">${['system', 'light', 'dark'].map((theme) => `<option value="${theme}" ${themePreference === theme ? 'selected' : ''}>${theme[0].toUpperCase() + theme.slice(1)}</option>`).join('')}</select></label><span class="live"><i></i> LIVE</span><button class="icon-button" title="Notifications">♧<b>2</b></button><div class="avatar-menu"><button class="avatar" id="avatar-button" title="Account" aria-expanded="${avatarMenuOpen}">SA</button>${avatarMenuOpen ? `<div class="avatar-dropdown" role="menu"><button id="open-settings-menu" role="menuitem">Settings</button><span class="avatar-dropdown-item disabled" role="menuitem" aria-disabled="true">Stand Alone</span></div>` : ''}</div></div>
+      <div class="top-actions"><label class="theme-control">Theme <select id="theme-select" aria-label="Color theme">${['system', 'light', 'dark'].map((theme) => `<option value="${theme}" ${themePreference === theme ? 'selected' : ''}>${theme[0].toUpperCase() + theme.slice(1)}</option>`).join('')}</select></label><span class="live"><i></i> LIVE</span><button class="icon-button" title="Notifications">♧<b>2</b></button><button class="avatar" title="Account">SA</button></div>
     </header>
     <main class="workspace" style="grid-template-columns:${sidebarWidth}px 6px minmax(400px,1fr) ${inspectorOpen ? `6px ${inspectorWidth}px` : '0px'}">
       <aside class="sidebar">
@@ -345,11 +325,9 @@ function renderCanvasContents() {
 }
 
 function renderLicenseDialog() {
-  const title = licenseTab === 'changelog' ? 'Changelog' : licenseTab === 'settings' ? 'Settings' : 'License';
-  const body = licenseTab === 'settings'
-    ? `<div class="settings-tab"><label><span>Device polling interval</span><select id="poll-interval-select">${pollIntervalOptions.map((seconds) => `<option value="${seconds}" ${seconds === pollIntervalSeconds ? 'selected' : ''}>${seconds < 60 ? `${seconds}s` : `${seconds / 60}m`}</option>`).join('')}</select></label><p class="settings-hint">How often the canvas and status bar refresh device metrics. Increase this if polling many devices is slow.</p></div>`
-    : `<pre>${escapeHtml(licenseTab === 'changelog' ? changelogText : licenseText)}</pre>`;
-  return `<div class="license-dialog" role="dialog" aria-modal="true" aria-labelledby="license-title"><section data-dialog-key="license"><header><h2 id="license-title">${title}</h2><button id="close-license" title="Close license">×</button></header><div class="license-tabs" role="tablist"><button class="license-tab ${licenseTab === 'license' ? 'active' : ''}" data-license-tab="license" role="tab" aria-selected="${licenseTab === 'license'}">License</button><button class="license-tab ${licenseTab === 'changelog' ? 'active' : ''}" data-license-tab="changelog" role="tab" aria-selected="${licenseTab === 'changelog'}">Changelog</button><button class="license-tab ${licenseTab === 'settings' ? 'active' : ''}" data-license-tab="settings" role="tab" aria-selected="${licenseTab === 'settings'}">Settings</button></div>${body}</section></div>`;
+  const title = licenseTab === 'changelog' ? 'Changelog' : 'License';
+  const content = licenseTab === 'changelog' ? changelogText : licenseText;
+  return `<div class="license-dialog" role="dialog" aria-modal="true" aria-labelledby="license-title"><section data-dialog-key="license"><header><h2 id="license-title">${title}</h2><button id="close-license" title="Close license">×</button></header><div class="license-tabs" role="tablist"><button class="license-tab ${licenseTab === 'license' ? 'active' : ''}" data-license-tab="license" role="tab" aria-selected="${licenseTab === 'license'}">License</button><button class="license-tab ${licenseTab === 'changelog' ? 'active' : ''}" data-license-tab="changelog" role="tab" aria-selected="${licenseTab === 'changelog'}">Changelog</button></div><pre>${escapeHtml(content)}</pre></section></div>`;
 }
 
 function renderDeviceForm(formValues) {
@@ -888,12 +866,6 @@ function bindEvents() {
   const closeLicenseButton = document.querySelector('#close-license');
   if (closeLicenseButton) closeLicenseButton.addEventListener('click', () => { licenseOpen = false; render(); });
   document.querySelectorAll('.license-tab').forEach((tab) => tab.addEventListener('click', () => { licenseTab = tab.dataset.licenseTab; render(); }));
-  const pollIntervalSelect = document.querySelector('#poll-interval-select');
-  if (pollIntervalSelect) pollIntervalSelect.addEventListener('change', (event) => {
-    pollIntervalSeconds = Number(event.target.value);
-    try { localStorage.setItem('nodeatlas-poll-interval', String(pollIntervalSeconds)); } catch {}
-    startMetricsPolling();
-  });
   const returnToTopologyButton = document.querySelector('#return-to-topology');
   if (returnToTopologyButton) returnToTopologyButton.addEventListener('click', () => { activeView = 'topology'; render(); });
   if (activeView !== 'topology') return;
@@ -1254,18 +1226,6 @@ function bindEvents() {
     actionsMenuOpen = !actionsMenuOpen;
     render();
   });
-  const avatarButton = document.querySelector('#avatar-button');
-  if (avatarButton) avatarButton.addEventListener('click', () => {
-    avatarMenuOpen = !avatarMenuOpen;
-    render();
-  });
-  const openSettingsMenu = document.querySelector('#open-settings-menu');
-  if (openSettingsMenu) openSettingsMenu.addEventListener('click', () => {
-    avatarMenuOpen = false;
-    licenseOpen = true;
-    licenseTab = 'settings';
-    render();
-  });
   const deleteButton = document.querySelector('#delete-device');
   if (deleteButton) deleteButton.addEventListener('click', async () => {
     if (!window.confirm(`Delete ${nodes.find((node) => node.id === selectedId).name}?`)) return;
@@ -1395,8 +1355,13 @@ function enableDialogChrome() {
     new ResizeObserver((entries) => {
       const entry = entries[0];
       if (!entry) return;
-      state.width = `${Math.round(entry.contentRect.width)}px`;
-      state.height = `${Math.round(entry.contentRect.height)}px`;
+      // Guard against collapsing to a near-invisible size (e.g. during a transient re-render).
+      const width = Math.max(100, Math.round(entry.contentRect.width));
+      const height = Math.max(200, Math.round(entry.contentRect.height));
+      state.width = `${width}px`;
+      state.height = `${height}px`;
+      if (width > Math.round(entry.contentRect.width)) box.style.width = state.width;
+      if (height > Math.round(entry.contentRect.height)) box.style.height = state.height;
     }).observe(box);
   });
 }
@@ -1795,20 +1760,12 @@ async function refreshMetrics(options = {}) {
 window.addEventListener('pointermove', moveNode);
 window.addEventListener('pointerup', endPointerInteraction);
 window.addEventListener('pointercancel', endPointerInteraction);
-window.addEventListener('pointerdown', (event) => {
-  if (avatarMenuOpen && !event.target.closest('.avatar-menu')) { avatarMenuOpen = false; render(); }
-});
 
 render();
 bootstrapWorkspace();
 refreshReleaseIndicator();
 setInterval(refreshReleaseIndicator, 60 * 60 * 1000);
-startMetricsPolling();
-// Tick independently of the metrics poll, which can take longer than 1s when devices are slow to respond.
-setInterval(() => {
-  const clockEl = document.querySelector('.status-bar-clock');
-  if (clockEl) clockEl.textContent = formatClock();
-}, 1000);
+setInterval(refreshMetrics, 1000);
 
 document.addEventListener('keydown', (event) => {
   if (event.key !== 'Delete' || event.target.matches('input, select, textarea') || !selectedNodeIds.size) return;
