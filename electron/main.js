@@ -150,11 +150,9 @@ function createWindow() {
   });
 
   mainWindow.webContents.setWindowOpenHandler(({ url }) => {
-    if (url.startsWith('https://github.com/stargazerwna/nodesatlas/releases/tag/')) {
-      shell.openExternal(url).catch((error) => console.error('Could not open release page:', error));
-      return { action: 'deny' };
-    }
-    return { action: 'allow' };
+    // Links (release page, device GUI) should open in the user's browser, not a blank Electron window.
+    shell.openExternal(url).catch((error) => console.error('Could not open link:', error));
+    return { action: 'deny' };
   });
 
   mainWindow.on('unresponsive', () => {
